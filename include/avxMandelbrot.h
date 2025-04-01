@@ -7,7 +7,7 @@
 const size_t WIDTH   = 1920;
 const size_t HEIGHT  = 1080;
 
-const size_t ITER_MAX = 2048;
+const size_t ITER_MAX = 1024;
 
 const size_t RGB_MAX  = 256;
 
@@ -17,8 +17,10 @@ const float  Y_START_SHIFT = -2.0f;
 const float  LIN_SHIFT   = 0.1;
 const float  SCALE_SHIFT = 0.1;
 
-const float dx = 4.0f / WIDTH;
-const float dy = 4.0f / HEIGHT;
+const float MAX_RADIUS = 4.0f;
+
+const float dx = MAX_RADIUS / WIDTH;
+const float dy = MAX_RADIUS / HEIGHT;
 
 enum renderError {
     NO_ERRORS = 0,
