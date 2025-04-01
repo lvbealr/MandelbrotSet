@@ -50,7 +50,7 @@ void hsvToRgb(float h, float s, float v, uint8_t& r, uint8_t& g, uint8_t& b) {
 }
 
 //renderError generateColor(uint8_t *points, const float x, const float y, const float iter) {
-//    if (!points) return NULL_PTR;
+//    customAssert(points != NULL, NULL_PTR);
 //
 //    size_t pointPos = (size_t)(y * WIDTH + x) * 4;
 //    float t = iter / (float)(ITER_MAX - 1);
@@ -150,6 +150,44 @@ renderError generateColor(uint8_t *points, const float x, const float y, const f
     points[pointPos + 3] = 255;
     return NO_ERRORS;
 }
+
+//renderError generateColor(uint8_t *points, const float x, const float y, const float iter) {
+//    customAssert(points != NULL, NULL_PTR);
+//
+//    size_t pointPos = (size_t)(y * WIDTH + x) * 4;
+//
+//    if (iter == ITER_MAX) {
+//        points[pointPos]     = 0;
+//        points[pointPos + 1] = 0;
+//        points[pointPos + 2] = 0;
+//    } else {
+//        float t = iter / (float) (ITER_MAX - 1);
+//
+//        float goldenHue = 40.0f;
+//        float goldenSaturation = 0.8f;
+//
+//        float hueVariation = 15.0f * sinf(255.0f * t);
+//        float hue = goldenHue + hueVariation;
+//
+//        float value = 0.5f + 0.3f * t;
+//
+//        uint8_t r, g, b;
+//        hsvToRgb(hue, goldenSaturation, value, r, g, b);
+//
+//        r = (uint8_t)(r * 1.2f);
+//        g = (uint8_t)(g * 0.9f);
+//        b = (uint8_t)(b * 0.5f);
+//
+//        points[pointPos]     = std::min(255, (int) r);
+//        points[pointPos + 1] = std::min(255, (int) g);
+//        points[pointPos + 2] = std::min(255, (int) b);
+//    }
+//
+//    points[pointPos + 3] = 255.f * cosf(sinf(255 * iter));
+//
+//    return NO_ERRORS;
+//}
+
 
 renderError calculateMandelbrot(sf::RenderWindow *window, uint8_t *points,
                                 const float xShift, const float yShift, const float scale) {
@@ -273,7 +311,7 @@ renderError drawMandelbrotSet(sf::RenderWindow *window, uint8_t *points) {
 
     sf::Texture texture(sf::Vector2u(WIDTH, HEIGHT));
 
-    texture.setSmooth(false);
+    texture.setSmooth(true);
     texture.update(points);
 
     sf::Sprite sprite(texture);
@@ -295,26 +333,62 @@ int main() {
 
     // uint64_t time = 0;
 
+    sf::Font font;
+    if (!font.openFromFile("font.ttf")) {
+        return -1;
+    }
+
+    sf::Text fpsText(font);
+    fpsText.setCharacterSize(20);
+    fpsText.setFillColor(sf::Color::Red);
+
+    sf::Clock clock;
+    float FPS = 0.0f;
+
+//    while (window.isOpen()) {
+//        while (const std::optional<sf::Event> event = window.pollEvent()) {
+//            if (event->is<sf::Event::Closed>()) {
+//                window.close();
+//            }
+//
+//            handleKeyboard(event, &xShift, &yShift, &scale);
+//        }
+//
+//        window.clear();
+//
+//        // uint64_t start = __rdtsc();
+//
+//        uint8_t *points = (uint8_t *)calloc(WIDTH * HEIGHT * 4, sizeof(uint8_t));
+//        calculateMandelbrot(&window, points, xShift, yShift, scale);
+//
+//        // uint64_t end = __rdtsc();
+//
+//        drawMandelbrotSet(&window, points);
+//    }
+
     while (window.isOpen()) {
         while (const std::optional<sf::Event> event = window.pollEvent()) {
             if (event->is<sf::Event::Closed>()) {
                 window.close();
             }
-
             handleKeyboard(event, &xShift, &yShift, &scale);
         }
 
-        window.clear();
+        float deltaTime = clock.restart().asSeconds();
+        FPS = 1.0f / deltaTime;
 
-        // uint64_t start = __rdtsc();
+        fpsText.setString("FPS: " + std::to_string(static_cast<int>(FPS)));
+
+        window.clear();
 
         uint8_t *points = (uint8_t *)calloc(WIDTH * HEIGHT * 4, sizeof(uint8_t));
         calculateMandelbrot(&window, points, xShift, yShift, scale);
-
-        // uint64_t end = __rdtsc();
-
         drawMandelbrotSet(&window, points);
+
+        window.draw(fpsText);
+        window.display();
     }
+
 
     return 0;
 }

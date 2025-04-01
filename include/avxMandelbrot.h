@@ -7,7 +7,7 @@
 const size_t WIDTH   = 1920;
 const size_t HEIGHT  = 1080;
 
-const size_t ITER_MAX = 1024;
+const size_t ITER_MAX = 8192;
 
 const size_t RGB_MAX  = 256;
 
