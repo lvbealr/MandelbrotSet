@@ -1,5 +1,5 @@
-#ifndef AVX_MANDELBROT_H_
-#define AVX_MANDELBROT_H_
+#ifndef MANDELBROT_H_
+#define MANDELBROT_H_
 
 #include <SFML/Graphics.hpp>
 #include <stdint.h>
@@ -27,4 +27,4 @@ renderError calculateMandelbrot(sf::RenderWindow *window, uint8_t *points, const
 renderError handleKeyboard     (const std::optional<sf::Event> event, float *xShift, float *yShift, float *scale);
 renderError drawMandelbrotSet  (sf::RenderWindow *window, uint8_t *points);
 
-#endif // AVX_MANDELBROT_H_
+#endif // MANDELBROT_H_

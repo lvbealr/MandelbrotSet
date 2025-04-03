@@ -3,7 +3,7 @@
 
 #include <math.h>
 
-#include "avxMandelbrot.h"
+#include "mandelbrot.h"
 #include "customWarning.h"
 
 //////////////////////////////////// COLORS ////////////////////////////////////////////
@@ -23,69 +23,33 @@ renderError calculateMandelbrot(sf::RenderWindow *window, uint8_t *points,
 
     const float dx = MAX_RADIUS / WIDTH;
 
-    static const __m256 R2max  = _mm256_set1_ps(MAX_RADIUS);
-    // [MAX_RADIUS MAX_RADIUS MAX_RADIUS MAX_RADIUS MAX_RADIUS MAX_RADIUS MAX_RADIUS MAX_RADIUS ]
-    static const __m256 POINTS = _mm256_set_ps (7.f, 6.f, 5.f, 4.f, 3.f, 2.f, 1.f, 0.f);
-    // [7.f 6.f 5.f 4.f 3.f 2.f 1.f 0.f]
-
     for (size_t y = 0; y < HEIGHT; y++) {
         float y0 = (y / (float) HEIGHT - 0.5f) * MAX_RADIUS * scale + yShift;
 
-        for (size_t x = 0; x < WIDTH; x += 8) {
+        for (size_t x = 0; x < WIDTH; x++) {
             float x0 = (x / (float) WIDTH - 0.5f) * MAX_RADIUS * scale + xShift;
 
-            __m256 X0 = _mm256_add_ps(_mm256_set1_ps(x0), _mm256_mul_ps(POINTS, _mm256_set1_ps(dx * scale)));
-            // [x0 + 0*dx x0 + 1*dx x0 + 2*dx ... x0 + 7*dx]
-            __m256 Y0 = _mm256_set1_ps(y0);
-            // [y0 y0 y0 y0 y0 y0 y0 y0]
+            float X = x0;
+            float Y = y0;
 
-            __m256 X = X0;
-            __m256 Y = Y0;
-            __m256i iterations = _mm256_setzero_si256();
+            size_t iter = 0;
 
-            for (size_t iteration = 0; iteration < ITER_MAX; iteration++) {
-                __m256 X2  = _mm256_mul_ps(X, X);
-                // [(x0+0*dx)^2 (x0+1*dx)^2 (x0+2*dx)^2 (x0+3*dx)^2 (x0+4*dx)^2 (x0+5*dx)^2 (x0+6*dx)^2 (x0+7*dx)^2]
-                __m256 Y2  = _mm256_mul_ps(Y, Y);
-                // [y0^2 y0^2 y0^2 y0^2 y0^2 y0^2 y0^2 y0^2]
-                __m256 XY  = _mm256_mul_ps(X, Y);
-                // [(x0+0*dx)y0 (x0+1*dx)y0 (x0+2*dx)y0 (x0+3*dx)y0 (x0+4*dx)y0 (x0+5*dx)y0 (x0+6*dx)y0 (x0+7*dx)y0 ]
+            for (; iter < ITER_MAX; iter++) {
+                float X2 = X * X;
+                float Y2 = Y * Y;
+                float XY = X * Y;
 
-                __m256 R2  = _mm256_add_ps(X2, Y2);
-                // []
-                __m256 cmp = _mm256_cmp_ps(R2, R2max, _CMP_LE_OQ);
-                // R2 <= R2max ? 0xffffffff : 0 (by element)
+                float R2 = X2 + Y2;
 
-                int mask   = _mm256_movemask_ps(cmp);
-                // bit mask
-                // ex.: cmp = [0xffffffff 0 0xffffffff 0 ... ]
-                // mask = 0b10101010
-
-                if (!mask) {
+                if (R2 > MAX_RADIUS) {
                     break;
                 }
 
-                __m256i ones = _mm256_set1_epi32(1);
-                // [1 1 1 1 1 1 1 1]
-                iterations   = _mm256_add_epi32(iterations, _mm256_and_si256(_mm256_castps_si256(cmp), ones));
-                // int32_t + int32_t
-                // _mm256_castps_si256 : __m256 (float) to __m256i (int)
-                // _mm256_and_si256    : bitwise and between cmp and ones
-
-                X = _mm256_add_ps(_mm256_sub_ps(X2, Y2), X0);
-                // X = X^2 - Y^2 + X0
-                Y = _mm256_add_ps(_mm256_add_ps(XY, XY), Y0);
-                // Y = 2XY + Y0
+                X = X2 - Y2 + x0;
+                Y = XY + XY + y0;
             }
 
-            int iter[8] = {};
-            _mm256_storeu_si256((__m256i*)iter, iterations);
-            // save 256 bit (8 * int32_t) from avx into memory (to iter)
-            // storeu <=> unaligned (no alignment)
-
-            for (size_t i = 0; i < 8 && x + i < WIDTH; i++) {
-                setTheme(points, x + i, y, (float) iter[i]);
-            }
+            setTheme(points, x, y, iter);
         }
     }
 
@@ -126,7 +90,6 @@ renderError handleKeyboard(const std::optional<sf::Event> event, float *xShift, 
 
             case sf::Keyboard::Key::T:
                 COLOR_THEME_INDEX++;
-
                 setTheme = COLOR_THEME[COLOR_THEME_INDEX % MAX_COLOR_THEME];
                 break;
 
@@ -165,7 +128,7 @@ int main() {
     float scale   = 0.5;
 
     uint64_t time = 0;
-    size_t run    = 0;
+    size_t run = 0;
 
     sf::Font font;
     if (!font.openFromFile("font.ttf")) {
@@ -184,7 +147,6 @@ int main() {
             if (event->is<sf::Event::Closed>()) {
                 window.close();
             }
-
             handleKeyboard(event, &xShift, &yShift, &scale);
         }
 
@@ -205,7 +167,7 @@ int main() {
         time += end - start;
         run++;
 
-        #ifdef _test
+        #if RUN_TEST
             if (run >= TEST) {
                 window.close();
             }
@@ -216,12 +178,12 @@ int main() {
             drawMandelbrotSet(&window, points);
         #endif
 
-        // window.draw(fpsText);
-        // window.display();
+        window.draw(fpsText);
+        window.display();
     }
 
-    #if _test
-        printf("RUNS: %ld, TIME: %ld (ticks) , TIME PER RUN: %ld (ticks per run) \n", run, time, time / run);
+    #if RUN_TEST
+        printf("RUNS: %ld, TIME: %ld (ticks), TIME PER RUN: %ld (ticks per run)\n", run, time, time / run);
     #endif
 
     return 0;
