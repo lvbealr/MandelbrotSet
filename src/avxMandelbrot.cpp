@@ -29,10 +29,10 @@ renderError calculateMandelbrot(sf::RenderWindow *window, uint8_t *points,
     // [7.f 6.f 5.f 4.f 3.f 2.f 1.f 0.f]
 
     for (size_t y = 0; y < HEIGHT; y++) {
-        float y0 = (y / (float) HEIGHT - 0.5f) * MAX_RADIUS * scale + yShift;
+        float y0 =     (y / (float) HEIGHT - 0.5f) * MAX_RADIUS * scale + yShift;
 
         for (size_t x = 0; x < WIDTH; x += 8) {
-            float x0 = (x / (float) WIDTH - 0.5f) * MAX_RADIUS * scale + xShift;
+            float x0 = (x / (float) WIDTH -  0.5f) * MAX_RADIUS * scale + xShift;
 
             __m256 X0 = _mm256_add_ps(_mm256_set1_ps(x0), _mm256_mul_ps(POINTS, _mm256_set1_ps(dx * scale)));
             // [x0 + 0*dx x0 + 1*dx x0 + 2*dx ... x0 + 7*dx]
@@ -41,6 +41,7 @@ renderError calculateMandelbrot(sf::RenderWindow *window, uint8_t *points,
 
             __m256 X = X0;
             __m256 Y = Y0;
+
             __m256i iterations = _mm256_setzero_si256();
 
             for (size_t iteration = 0; iteration < ITER_MAX; iteration++) {
@@ -145,10 +146,10 @@ renderError drawMandelbrotSet(sf::RenderWindow *window, uint8_t *points) {
     sf::Texture texture(sf::Vector2u(WIDTH, HEIGHT));
 
     texture.setSmooth(true);
-    texture.update(points);
+    texture.update   (points);
 
     sf::Sprite sprite(texture);
-    window->draw(sprite);
+    window->draw     (sprite);
 
     window->display();
 
@@ -168,15 +169,18 @@ int main() {
     size_t run    = 0;
 
     sf::Font font;
-    if (!font.openFromFile("font.ttf")) {
+
+    if (!font.openFromFile("common/font.ttf")) {
         return -1;
     }
 
     sf::Text fpsText(font);
+
     fpsText.setCharacterSize(20);
     fpsText.setFillColor(sf::Color::Red);
 
     sf::Clock clock;
+
     float FPS = 0.0f;
 
     while (window.isOpen()) {
@@ -189,18 +193,18 @@ int main() {
         }
 
         float deltaTime = clock.restart().asSeconds();
-        FPS = 1.0f / deltaTime;
+        FPS             = 1.0f / deltaTime;
 
         fpsText.setString("FPS: " + std::to_string(static_cast<int>(FPS)));
 
         window.clear();
 
-        uint64_t start = __rdtsc();
+        uint64_t start  = __rdtsc();
 
         uint8_t *points = (uint8_t *)calloc(WIDTH * HEIGHT * 4, sizeof(uint8_t));
         calculateMandelbrot(&window, points, xShift, yShift, scale);
 
-        uint64_t end = __rdtsc();
+        uint64_t end    = __rdtsc();
 
         time += end - start;
         run++;

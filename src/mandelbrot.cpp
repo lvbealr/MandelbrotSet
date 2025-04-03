@@ -21,13 +21,11 @@ renderError calculateMandelbrot(sf::RenderWindow *window, uint8_t *points,
     customAssert(window != NULL, NULL_PTR);
     customAssert(points != NULL, NULL_PTR);
 
-    const float dx = MAX_RADIUS / WIDTH;
-
     for (size_t y = 0; y < HEIGHT; y++) {
-        float y0 = (y / (float) HEIGHT - 0.5f) * MAX_RADIUS * scale + yShift;
+        float     y0 = (y / (float) HEIGHT - 0.5f) * MAX_RADIUS * scale + yShift;
 
         for (size_t x = 0; x < WIDTH; x++) {
-            float x0 = (x / (float) WIDTH - 0.5f) * MAX_RADIUS * scale + xShift;
+            float x0 = (x / (float) WIDTH -  0.5f) * MAX_RADIUS * scale + xShift;
 
             float X = x0;
             float Y = y0;
@@ -108,10 +106,10 @@ renderError drawMandelbrotSet(sf::RenderWindow *window, uint8_t *points) {
     sf::Texture texture(sf::Vector2u(WIDTH, HEIGHT));
 
     texture.setSmooth(true);
-    texture.update(points);
+    texture.update   (points);
 
     sf::Sprite sprite(texture);
-    window->draw(sprite);
+    window->draw     (sprite);
 
     window->display();
 
@@ -128,18 +126,21 @@ int main() {
     float scale   = 0.5;
 
     uint64_t time = 0;
-    size_t run = 0;
+    size_t   run  = 0;
 
     sf::Font font;
-    if (!font.openFromFile("font.ttf")) {
+
+    if (!font.openFromFile("common/font.ttf")) {
         return -1;
     }
 
     sf::Text fpsText(font);
+
     fpsText.setCharacterSize(20);
-    fpsText.setFillColor(sf::Color::Red);
+    fpsText.setFillColor    (sf::Color::Red);
 
     sf::Clock clock;
+
     float FPS = 0.0f;
 
     while (window.isOpen()) {
@@ -147,27 +148,28 @@ int main() {
             if (event->is<sf::Event::Closed>()) {
                 window.close();
             }
+            
             handleKeyboard(event, &xShift, &yShift, &scale);
         }
 
         float deltaTime = clock.restart().asSeconds();
-        FPS = 1.0f / deltaTime;
+        FPS             = 1.0f / deltaTime;
 
         fpsText.setString("FPS: " + std::to_string(static_cast<int>(FPS)));
 
         window.clear();
 
-        uint64_t start = __rdtsc();
+        uint64_t start  = __rdtsc();
 
         uint8_t *points = (uint8_t *)calloc(WIDTH * HEIGHT * 4, sizeof(uint8_t));
         calculateMandelbrot(&window, points, xShift, yShift, scale);
 
-        uint64_t end = __rdtsc();
+        uint64_t end    = __rdtsc();
 
         time += end - start;
         run++;
 
-        #if RUN_TEST
+        #ifdef _test
             if (run >= TEST) {
                 window.close();
             }
@@ -178,11 +180,11 @@ int main() {
             drawMandelbrotSet(&window, points);
         #endif
 
-        window.draw(fpsText);
-        window.display();
+        // window.draw(fpsText);
+        // window.display();
     }
 
-    #if RUN_TEST
+    #ifdef _test
         printf("RUNS: %ld, TIME: %ld (ticks), TIME PER RUN: %ld (ticks per run)\n", run, time, time / run);
     #endif
 
