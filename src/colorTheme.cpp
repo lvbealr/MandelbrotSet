@@ -5,6 +5,16 @@
 #include "colorTheme.h"
 #include "customWarning.h"
 
+//////////////////////////////////// COLORS ////////////////////////////////////////////
+
+colorTheme COLOR_THEME[] = {theme_0, theme_1, theme_2};
+extern const size_t MAX_COLOR_THEME = sizeof(COLOR_THEME) / sizeof(COLOR_THEME[0]);
+
+size_t COLOR_THEME_INDEX = 0;
+colorTheme setTheme      = COLOR_THEME[COLOR_THEME_INDEX];
+
+////////////////////////////////////////////////////////////////////////////////////////
+
 void hsvToRgb(float h, float s, float v, uint8_t *r, uint8_t *g, uint8_t *b) {
     h = fmod(h, 360.0f);
 
@@ -19,29 +29,41 @@ void hsvToRgb(float h, float s, float v, uint8_t *r, uint8_t *g, uint8_t *b) {
     float r1, g1, b1;
 
     if (h < 60) {
+        
         r1 = c;
         g1 = x;
         b1 = 0;
+
     } else if (h < 120) {
+
         r1 = x;
         g1 = c;
         b1 = 0;
+        
     } else if (h < 180) {
+
         r1 = 0;
         g1 = c;
         b1 = x;
+
     } else if (h < 240) {
+
         r1 = 0;
         g1 = x;
         b1 = c;
+
     } else if (h < 300) {
+
         r1 = x;
         g1 = 0;
         b1 = c;
+
     } else {
+
         r1 = c;
         g1 = 0;
         b1 = x;
+
     }
 
     *r = (uint8_t)((r1 + m) * 255.0f);
@@ -72,18 +94,19 @@ renderError theme_0(uint8_t *points, const float x, const float y, const float i
      float threshold = 0.05f * ITER_MAX;
  
      if (iter == ITER_MAX || iter < threshold) {
+
         points[pointPos]     = 20;
         points[pointPos + 1] = 20;
         points[pointPos + 2] = 20;
+
      } else {
+
         float t = iter / (float)(ITER_MAX - 1);
  
-        // base color
         float baseHue      = 128.0f;
         float hueVariation = 5.0f;
         float saturation   = 0.8f;
  
-        // more value more brightness
         float value = 0.8f + 0.2f * t;
         float hue   = baseHue + hueVariation * cosf(256.0f * t);
  
@@ -95,7 +118,6 @@ renderError theme_0(uint8_t *points, const float x, const float y, const float i
         uint8_t g  = (uint8_t)(g_t * (1.0f - glow) + 128 * glow);
         uint8_t b  = (uint8_t)(b_t * (1.0f - glow) + 128 * glow);
  
-        // 3d light
         float lightDirX = -0.7f;
         float lightDirY = -0.7f;
 
@@ -129,17 +151,12 @@ renderError theme_0(uint8_t *points, const float x, const float y, const float i
         float borderThreshold = 65536.0f;
         float edgeGlowFactor  = 1.0f - fmin(edgeDist / borderThreshold, 1.0f);
  
-        // glow gradient
-        // blue (from left)  RGB = (0,  150, 255)
-        // pink (from right) RGB = (255, 15, 192)
- 
         float gradientFactor = x / (float) WIDTH;
  
         uint8_t tintR = (uint8_t)(0   * (1.0f - gradientFactor) + 255 * gradientFactor);
         uint8_t tintG = (uint8_t)(150 * (1.0f - gradientFactor) + 15  * gradientFactor);
         uint8_t tintB = (uint8_t)(255 * (1.0f - gradientFactor) + 192 * gradientFactor);
  
-        // interpolate
         r = (uint8_t)(r * (1.0f - edgeGlowFactor) + tintR * edgeGlowFactor);
         g = (uint8_t)(g * (1.0f - edgeGlowFactor) + tintG * edgeGlowFactor);
         b = (uint8_t)(b * (1.0f - edgeGlowFactor) + tintB * edgeGlowFactor);
@@ -160,10 +177,13 @@ renderError theme_0(uint8_t *points, const float x, const float y, const float i
     size_t pointPos = (size_t)(y * WIDTH + x) * 4;
  
     if (iter == ITER_MAX) {
+
         points[pointPos]     = 0;
         points[pointPos + 1] = 0;
         points[pointPos + 2] = 0;
+
     } else {
+
         float t = iter / (float) (ITER_MAX - 1);
  
         float goldenHue        = 40.0f;
@@ -184,6 +204,7 @@ renderError theme_0(uint8_t *points, const float x, const float y, const float i
         points[pointPos]     = std::min(255, (int) r);
         points[pointPos + 1] = std::min(255, (int) g);
         points[pointPos + 2] = std::min(255, (int) b);
+
     }
  
     points[pointPos + 3] = 255.f * cosf(sinf(255 * iter));

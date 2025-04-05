@@ -11,6 +11,8 @@ enum renderError {
     NULL_PTR  = 1
 };
 
+typedef renderError (*colorTheme)(uint8_t *, const float, const float, const float);
+
 void hsvToRgb(float h, float s, float v, uint8_t *r, uint8_t *g, uint8_t *b);
 
 /////////////////////////////// BLACK && WHITE WAVES /////////////////////////////////
