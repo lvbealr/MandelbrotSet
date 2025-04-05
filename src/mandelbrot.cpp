@@ -1,6 +1,6 @@
 #include <SFML/Graphics.hpp>
 #include <immintrin.h>
-
+#include <stdbool.h>
 #include <math.h>
 
 #include "mandelbrot.h"
@@ -8,13 +8,14 @@
 
 //////////////////////////////////// COLORS ////////////////////////////////////////////
 
-static colorTheme   COLOR_THEME[]     = {theme_0, theme_1, theme_2};
-static const size_t MAX_COLOR_THEME   = sizeof(COLOR_THEME) / sizeof(COLOR_THEME[0]);
-
-static size_t       COLOR_THEME_INDEX = 0;
-static colorTheme   setTheme          = COLOR_THEME[COLOR_THEME_INDEX];
+extern colorTheme   COLOR_THEME[];
+extern colorTheme   setTheme;
+extern const size_t MAX_COLOR_THEME;
+extern       size_t COLOR_THEME_INDEX;
 
 ////////////////////////////////////////////////////////////////////////////////////////
+
+static bool SHOW_FPS = false;
 
 renderError calculateMandelbrot(sf::RenderWindow *window, uint8_t *points,
                                 const float xShift, const float yShift, const float scale) {
@@ -90,6 +91,9 @@ renderError handleKeyboard(const std::optional<sf::Event> event, float *xShift, 
                 COLOR_THEME_INDEX++;
                 setTheme = COLOR_THEME[COLOR_THEME_INDEX % MAX_COLOR_THEME];
                 break;
+
+            case sf::Keyboard::Key::F11:
+                SHOW_FPS = (SHOW_FPS) ? false : true;
 
             default:
                 break;
@@ -169,7 +173,7 @@ int main() {
         time += end - start;
         run++;
 
-        #ifdef _test
+        #ifdef ON_TEST_
             if (run >= TEST) {
                 window.close();
             }
@@ -180,11 +184,13 @@ int main() {
             drawMandelbrotSet(&window, points);
         #endif
 
-        // window.draw(fpsText);
-        // window.display();
+        if (SHOW_FPS) {
+            window.draw(fpsText);
+            window.display();
+        }
     }
 
-    #ifdef _test
+    #ifdef ON_TEST_
         printf("RUNS: %ld, TIME: %ld (ticks), TIME PER RUN: %ld (ticks per run)\n", run, time, time / run);
     #endif
 
