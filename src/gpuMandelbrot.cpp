@@ -1,7 +1,7 @@
 #include <SFML/Graphics.hpp>
 
-#include "mandelbrot.h"
 #include "customWarning.h"
+#include "mandelbrot.h"
 
 static size_t COLOR_THEME_INDEX = 0;
 

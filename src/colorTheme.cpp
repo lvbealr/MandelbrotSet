@@ -1,5 +1,5 @@
-#include <stddef.h>
 #include <math.h>
+#include <stddef.h>
 #include <stdint.h>
 
 #include "colorTheme.h"
