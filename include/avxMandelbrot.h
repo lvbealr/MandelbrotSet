@@ -20,7 +20,7 @@ const float dy = MAX_RADIUS / HEIGHT;
 const size_t TEST = 300;
 
 renderError calculateMandelbrot(sf::RenderWindow *window, uint8_t *points, const float  xShift, const float  yShift, const float  scale);
-renderError drawMandelbrotSet  (sf::RenderWindow *window, uint8_t *points);
+renderError drawMandelbrotSet  (sf::RenderWindow *window, uint8_t *points, sf::Texture *texture);
 
 renderError handleKeyboard     (const std::optional<sf::Event> event,            float *xShift,       float *yShift,       float *scale);
 

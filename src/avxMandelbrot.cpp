@@ -144,19 +144,14 @@ renderError handleKeyboard(const std::optional<sf::Event> event, float *xShift, 
     return NO_ERRORS;
 }
 
-renderError drawMandelbrotSet(sf::RenderWindow *window, uint8_t *points) {
+renderError drawMandelbrotSet(sf::RenderWindow *window, uint8_t *points, sf::Texture *texture) {
     customAssert(window!= NULL, NULL_PTR);
     customAssert(points!= NULL, NULL_PTR);
 
-    sf::Texture texture(sf::Vector2u(WIDTH, HEIGHT));
+    texture->update   (points);
 
-    texture.setSmooth(true);
-    texture.update   (points);
-
-    sf::Sprite sprite(texture);
+    sf::Sprite sprite(*texture);
     window->draw     (sprite);
-
-    window->display();
 
     free(points);
 
@@ -179,38 +174,37 @@ int main() {
     size_t   run  = 0;
 
     sf::Font font;
-
     if (!font.openFromFile("common/font.ttf")) {
         return -1;
     }
 
     sf::Text fpsText(font);
-
     fpsText.setCharacterSize(24);
     fpsText.setFillColor(sf::Color::Red);
 
     float FPS = 0.0f;
+
+    sf::Texture texture(sf::Vector2u(WIDTH, HEIGHT));
+    texture.setSmooth(true);
 
     while (window.isOpen()) {
         while (const std::optional<sf::Event> event = window.pollEvent()) {
             if (event->is<sf::Event::Closed>()) {
                 window.close();
             }
-
             handleKeyboard(event, &xShift, &yShift, &scale);
         }
 
         float deltaTime = clock.restart().asSeconds();
-        FPS             = 1.0f / deltaTime;
-
+        FPS = 1.0f / deltaTime;
         fpsText.setString("FPS: " + std::to_string(static_cast<int>(FPS)));
 
-        uint64_t start  = __rdtsc();
+        uint64_t start = __rdtsc();
 
         uint8_t *points = (uint8_t *)calloc(WIDTH * HEIGHT * 4, sizeof(uint8_t));
         calculateMandelbrot(&window, points, xShift, yShift, scale);
 
-        uint64_t end    = __rdtsc();
+        uint64_t end = __rdtsc();
 
         time += end - start;
         run++;
@@ -219,17 +213,18 @@ int main() {
             if (run >= TEST) {
                 window.close();
             }
-
             printf("%ld/%ld\n", run, TEST);
-
         #else
-            drawMandelbrotSet(&window, points);
-        #endif
+            window.clear();
 
-        if (SHOW_FPS) {
-            window.draw(fpsText);
+            drawMandelbrotSet(&window, points, &texture);
+
+            if (SHOW_FPS) {
+                window.draw(fpsText);
+            }
+
             window.display();
-        }
+        #endif
     }
 
     #if ON_TEST_
