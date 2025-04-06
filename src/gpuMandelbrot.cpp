@@ -5,6 +5,8 @@
 
 static size_t COLOR_THEME_INDEX = 0;
 
+static bool SHOW_FPS = true;
+
 renderError handleKeyboard(const std::optional<sf::Event> event, float *xShift, float *yShift, float *scale) {
     customAssert(event.has_value(), NULL_PTR);
     customAssert(xShift != NULL,    NULL_PTR);
@@ -41,6 +43,9 @@ renderError handleKeyboard(const std::optional<sf::Event> event, float *xShift, 
                 COLOR_THEME_INDEX++;
                 break;
 
+            case sf::Keyboard::Key::F11:
+                SHOW_FPS = !SHOW_FPS;
+
             default:
                 break;
         }
@@ -52,14 +57,12 @@ renderError handleKeyboard(const std::optional<sf::Event> event, float *xShift, 
 int main() {
     sf::RenderWindow window(sf::VideoMode({WIDTH, HEIGHT}), "Mandelbrot Set");
     
-    float xShift  = 0.0;
-    float yShift  = 0.0;
-    float scale   = 1.0;
+    float xShift = 0.0;
+    float yShift = 0.0;
+    float scale  = 1.0;
 
     sf::Clock clock;
-
-    window.setVerticalSyncEnabled(true);
-    window.setFramerateLimit(60);
+    sf::Clock fpsClock;
 
     sf::Shader shader;
     if (!shader.loadFromFile("shaders/mandelbrot.frag", sf::Shader::Type::Fragment)) {
@@ -69,14 +72,25 @@ int main() {
     sf::RectangleShape fullscreenRect(sf::Vector2f({WIDTH, HEIGHT}));
     fullscreenRect.setPosition({0, 0});
 
+    sf::Font font;
+    if (!font.openFromFile("common/font.ttf")) {
+        return 1;
+    }
+
+    sf::Text fpsText(font);
+    fpsText.setCharacterSize(24);
+    fpsText.setFillColor(sf::Color::Green);
+
     while (window.isOpen()) {
         while (const std::optional<sf::Event> event = window.pollEvent()) {
             if (event->is<sf::Event::Closed>()) {
                 window.close();
             }
-
             handleKeyboard(event, &xShift, &yShift, &scale);
         }
+
+        float deltaTime = fpsClock.restart().asSeconds();
+        float FPS = (deltaTime > 0) ? 1.0f / deltaTime : 0.0f;
 
         shader.setUniform("time",   clock.getElapsedTime().asSeconds());
         shader.setUniform("width",  (int) WIDTH);
@@ -86,8 +100,13 @@ int main() {
         shader.setUniform("theme",  (int) COLOR_THEME_INDEX);
 
         window.clear();
-
         window.draw(fullscreenRect, &shader);
+
+        if (SHOW_FPS) {
+            fpsText.setString("FPS: " + std::to_string(static_cast<int>(FPS)));
+            window.draw(fpsText);
+        }
+
         window.display();
     }
 

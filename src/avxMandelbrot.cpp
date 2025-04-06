@@ -141,7 +141,7 @@ renderError handleKeyboard(const std::optional<sf::Event> event, float *xShift, 
                 break;
 
             case sf::Keyboard::Key::F11:
-                SHOW_FPS = (SHOW_FPS) ? false : true;    
+                SHOW_FPS = !SHOW_FPS;
 
             default:
                 break;
@@ -174,9 +174,6 @@ int main() {
 
     sf::Clock clock;
 
-    window.setVerticalSyncEnabled(true);
-    window.setFramerateLimit(60);
-
     uint64_t time = 0;
     size_t   run  = 0;
 
@@ -187,7 +184,7 @@ int main() {
 
     sf::Text fpsText(font);
     fpsText.setCharacterSize(24);
-    fpsText.setFillColor(sf::Color::Red);
+    fpsText.setFillColor(sf::Color::Green);
 
     float FPS = 0.0f;
 
