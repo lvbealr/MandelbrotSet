@@ -1,4 +1,5 @@
 #include <SFML/Graphics.hpp>
+
 #include <immintrin.h>
 #include <math.h>
 #include <stdbool.h>
@@ -85,12 +86,18 @@ renderError calculateMandelbrot(sf::RenderWindow *window, uint8_t *points, const
         size_t startY = i * rowsPerThread;
         size_t endY   = (i == numThreads - 1) ? HEIGHT : startY + rowsPerThread;
 
-        threads.emplace_back(calculateMandelbrotSection, points, xShift, yShift, scale, startY, endY);
+        #ifdef ON_MULTITHREADING_
+            threads.emplace_back(calculateMandelbrotSection, points, xShift, yShift, scale, startY, endY);
+        #else
+            calculateMandelbrotSection(points, xShift, yShift, scale, startY, endY);
+        #endif
     }
 
-    for (auto &thread : threads) {
-        thread.join();
-    }
+    #ifdef ON_MULTITHREADING_
+        for (auto &thread : threads) {
+            thread.join();
+        }
+    #endif
 
     return NO_ERRORS;
 }
