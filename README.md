@@ -60,10 +60,16 @@ Let's try to run the programs with different compiler optimization levels (`-O0`
 
 ## ⏱️ Operating time study <a name = "time"></a>
 
-> [!NOTE]
-> The project was run on an 12th Gen Intel(R) Core(TM) i5-1235U (10 Cores, 12 Threads, Alder Lake, AVX2 support).
+### 🖥️ Test Environment Specifications:
+  + CPU: 12th Gen Intel® Core™ i5-1235U (4+8) @ 4.40GHz (10 Cores, 12 Threads, Alder Lake, AVX2 support)
+  + RAM: 16GB DDR4 (3200 MT/s)
+  + OS: Arch Linux 6.13.5-arch1-1 x86-64
+  + Compiler: g++ (GCC) 14.2.1
+  + Resolution: 800x600 pixels
+  + Max Iterations: 256
+  + Test Protocol: 100 frames rendered 100 times per configuration
 
-First, we analyze the performance of the standard implementation depending on compiler optimizations. Tests were conducted at a resolution of `800x600` pixels, `MAX_ITER = 256`. **100 frames** were rendered **100 times**. The [graphics/default.py](https://github.com/lvbealr/MandelbrotSet/blob/main/graphics/default.py) and [graphics/comparison.py](https://github.com/lvbealr/MandelbrotSet/blob/main/graphics/comparison.py) files calculate data for comparing the performance of **compiler-only optimizations on the naive version** and the **array-optimized** and **AVX256-optimized** versions, respectively. For each iteration number, the arithmetic mean of execution time over all frames is calculated, and the standard deviation is a measure of data dispersion. Ideally, we should get at least an **8-fold** increase. Will it work?
+First, we analyze the performance of the standard implementation depending on compiler optimizations. The [graphics/default.py](https://github.com/lvbealr/MandelbrotSet/blob/main/graphics/default.py) and [graphics/comparison.py](https://github.com/lvbealr/MandelbrotSet/blob/main/graphics/comparison.py) files calculate data for comparing the performance of **compiler-only optimizations on the naive version** and the **array-optimized** and **AVX256-optimized** versions, respectively. For each iteration number, the arithmetic mean of execution time over all frames is calculated, and the standard deviation is a measure of data dispersion. Ideally, we should get at least an **8-fold** increase. Will it work?
 
 First, let's see how well the compiler works: how much can it optimize the code?
 
@@ -74,6 +80,18 @@ First, let's see how well the compiler works: how much can it optimize the code?
 
 `-O3` optimization reduces the time by a factor of about **1.91** > (from 16.55e7 to 8.61e7 ticks).
 
+```md
+[Statistics for Default Version (-O0)]
+Average Execution Time: 165452507.44 ± 546207.74 ticks (SEM)
+Mean Standard Deviation: 5462077.40 ticks
+Relative Error: 0.33%
+
+[Statistics for Default Version (-O3)]
+Average Execution Time: 86191819.96 ± 253457.40 ticks (SEM)
+Mean Standard Deviation: 2534573.96 ticks
+Relative Error: 0.29%
+```
+
 <p align="center">
   <a href="" rel="noopener">
  <img src="https://github.com/lvbealr/MandelbrotSet/blob/main/graphics/img/defaultCmp.png" alt="Default Comparison"></a>
@@ -81,7 +99,9 @@ First, let's see how well the compiler works: how much can it optimize the code?
 
 ---
 
-Now let's look at the result of my own optimizations. In the array-optimized version, 8 points are processed at each loop step - so let's `try to parallelize the calculations`. In addition, `Intel Intrinsics similar functions` are implemented. I wonder if the compiler will see my hints about using intrinsics?
+Now let's look at the result of my own optimizations. In the array-optimized version, 8 points are processed at each loop step - so let's `try to parallelize the calculations`.
+In this mode, the program processes an array of 8 pixels per loop iteration, which allows the compiler in `-O3 mode` to perform partial vectorization of this process.
+In addition, `Intel Intrinsics similar functions` are implemented. I wonder if the compiler will see my hints about using intrinsics?
 
 Here we will also consider the result of the program with explicit use of `AVX256 instructions` (in my case, i use `__m256` vectors of size 256 bits, store type `float`).
 
@@ -91,10 +111,28 @@ Here we will also consider the result of the program with explicit use of `AVX25
 
 The array-optimized version works `1.96 times faster` than the primitive version. 
 
+```md
+[Statistics for Default Version (-O3)]
+Average Execution Time: 86191819.96 ± 253457.40 ticks (SEM)
+Mean Standard Deviation: 2534573.96 ticks
+Relative Error: 0.29%
+
+[Statistics for Array Optimized Version (-O3)]
+Average Execution Time: 43982076.93 ± 114784.04 ticks (SEM)
+Mean Standard Deviation: 1147840.45 ticks
+Relative Error: 0.26%
+
+[Statistics for AVX256 Optimized Version (-O3)]
+Average Execution Time: 18982180.16 ± 62965.22 ticks (SEM)
+Mean Standard Deviation: 629652.23 ticks
+Relative Error: 0.33%
+```
+
 <p align="center">
   <a href="" rel="noopener">
  <img src="https://github.com/lvbealr/MandelbrotSet/blob/main/graphics/img/totalCmp.png" alt="Total Comparison"></a>
 </p>
+
 
 In general, my hints to the compiler did not help much. It used AVX2 instructions only when specifying `R2max` and `POINTS` vectors. 
 
@@ -108,6 +146,12 @@ In general, my hints to the compiler did not help much. It used AVX2 instruction
                         52 00 00
 ```
 Finally, explicit use of **intrinsic-functions** gives a performance boost of more than `4.54 times!`
+
+Now let's compare different implementations with compiler optimizations `-O0`. Without compiler optimizations, the array-optimized version will obviously be **slower** even than the naive one. Accessing the array elements requires **calculating addresses**, **reading** and **writing to memory**, which is much slower than working with processor registers. In this case, each operation on an array element is performed separately, which is much slower than sequential code due to the overhead of managing arrays.
+
+| Compiler Optimization   | Default Version, ticks per frame | Array-optimized, ticks per frame | AVX256-optimized, ticks per frame |
+|:-----------------------:|:--------------------------------:|:--------------------------------:|:---------------------------------:|
+|  -O0                    | 158205005.31                     | 704089035.51                     | 73275478.12                       |
 
 ---
 
@@ -210,4 +254,4 @@ The program has the ability to dynamically change the coloring and display FPS. 
 
 ## ✍ Authors <a name = "authors"></a>
 
-- [@lvbealr](https://github.com/lvbealr) - Idea & Initial work
+- [@lvbealr](https://github.com/lvbealr) - Initial work

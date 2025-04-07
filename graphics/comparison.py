@@ -37,6 +37,19 @@ means_DEF_O3, stds_DEF_O3 = computeStats(defaultO3data, MAX_ITER, MAX_FRAME)
 means_ARR_O3, stds_ARR_O3 = computeStats(arrayO3data,   MAX_ITER, MAX_FRAME)
 means_AVX_O3, stds_AVX_O3 = computeStats(avxO3data,     MAX_ITER, MAX_FRAME)
 
+def print_stats(means, stds, name, frame_count):
+    mean_time = np.mean(means)
+    avg_std = np.mean(stds)
+    sem = avg_std / np.sqrt(frame_count)
+    print(f"[Statistics for {name}]")
+    print(f"Average Execution Time: {mean_time:.2f} ± {sem:.2f} ticks (SEM)")
+    print(f"Mean Standard Deviation: {avg_std:.2f} ticks")
+    print(f"Relative Error: {(sem/mean_time)*100:.2f}%\n")
+
+print_stats(means_DEF_O3, stds_DEF_O3, "Default Version (-O3)",          MAX_FRAME)
+print_stats(means_ARR_O3, stds_ARR_O3, "Array Optimized Version (-O3)",  MAX_FRAME)
+print_stats(means_AVX_O3, stds_AVX_O3, "AVX256 Optimized Version (-O3)", MAX_FRAME)
+
 plt.figure(figsize=(30, 30))
 
 plt.errorbar(OX, means_DEF_O3, yerr=stds_DEF_O3, label='Default Version (-O3)',          color='hotpink', fmt='o', capsize=5) 
