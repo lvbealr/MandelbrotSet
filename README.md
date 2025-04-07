@@ -9,6 +9,10 @@
 - [How It Works](#how_it_works)
 - [Work Progress](#work_progress)
 - [Operating time study](#time)
+- [GLSL Implementation](#gpu)
+- [Multithreading](#multithreading)
+- [Installation](#installation)
+- [Example Usage](#example_usage)
 - [Conclusion](#conclusion)
 - [Built Using](#built_using)
 - [Authors](#authors)
@@ -32,20 +36,11 @@ The Mandelbrot set is constructed as follows:
 4. We will build a sequence of such points until the k-th point is not removed by a distance greater than `MAX_RADIUS`.
 5. Let's color the very first point with coordinates $(x_{0}, y_{0})$ with some color (depends on the color themes).
 
-<p align="center">
-  <a href="" rel="noopener">
- <img src="https://i.imgur.com/m9lE6s3.png" alt="theme_0"></a>
-</p>
-
-<p align="center">
-  <a href="" rel="noopener">
- <img src="https://i.imgur.com/aoAR43e.png" alt="theme_1"></a>
-</p>
-
-<p align="center">
-  <a href="" rel="noopener">
- <img src="https://i.imgur.com/EQ3q7Xm.png" alt="theme_2"></a>
-</p>
+<div style="display: flex; justify-content: space-between;">
+  <img src="https://i.imgur.com/PxwyMLQ.png" alt="Black & White" width="33%">
+  <img src="https://i.imgur.com/vibS6Ox.png" alt="Blue & Purple" width="33%">
+  <img src="https://i.imgur.com/KxzxFk5.png" alt="Yellow & Brown" width="33%">
+</div>
 
 
 ## 🏗 Work Progress <a name = "work_progress"></a>
@@ -65,90 +60,144 @@ Let's try to run the programs with different compiler optimization levels (`-O0`
 
 ## ⏱️ Operating time study <a name = "time"></a>
 
-First, we analyze the performance of the standard implementation depending on compiler optimizations. We will use the method of least squares.
+> [!NOTE]
+> The project was run on an 12th Gen Intel(R) Core(TM) i5-1235U (10 Cores, 12 Threads, Alder Lake, AVX2 support).
 
-During program execution, the processor frequency was maintained at `4.2GHz`.
+First, we analyze the performance of the standard implementation depending on compiler optimizations. Tests were conducted at a resolution of `800x600` pixels, `MAX_ITER = 256`. **100 frames** were rendered **100 times**. The [graphics/default.py](https://github.com/lvbealr/MandelbrotSet/blob/main/graphics/default.py) and [graphics/comparison.py](https://github.com/lvbealr/MandelbrotSet/blob/main/graphics/comparison.py) files calculate data for comparing the performance of **compiler-only optimizations on the naive version** and the **array-optimized** and **AVX256-optimized** versions, respectively. For each iteration number, the arithmetic mean of execution time over all frames is calculated, and the standard deviation is a measure of data dispersion. Ideally, we should get at least an **8-fold** increase. Will it work?
+
+First, let's see how well the compiler works: how much can it optimize the code?
+
+| Compiler Optimization   | Default Version, ticks per frame | 
+|:-----------------------:|:--------------------------------:|
+|  -O0                    | 165452507.43                     |
+|  -O3                    | 86191819.96                      |
+
+`-O3` optimization reduces the time by a factor of about **1.91** > (from 16.55e7 to 8.61e7 ticks).
 
 <p align="center">
   <a href="" rel="noopener">
- <img src="https://i.imgur.com/gA5BIXI.jpeg" alt="theme_2"></a>
+ <img src="https://github.com/lvbealr/MandelbrotSet/blob/main/graphics/img/defaultCmp.png" alt="Default Comparison"></a>
 </p>
 
-Let's convert ticks to seconds.
+---
 
-* -O0:
-  + $t_1 = 9,032,576,960$ ticks -> $\frac{9,032,576,960}{4.2 \cdot 10^9} \approx 2.1506 s$
-  + $t_2 = 8,962,383,657$ ticks -> $\frac{8,962,383,657}{4.2 \cdot 10^9} \approx 2.1339 s$
-  + $t_3 = 8,976,928,612$ ticks -> $\frac{8,976,928,612}{4.2 \cdot 10^9} \approx 2.1374 s$
+Now let's look at the result of my own optimizations. In the array-optimized version, 8 points are processed at each loop step - so let's `try to parallelize the calculations`. In addition, `Intel Intrinsics similar functions` are implemented. I wonder if the compiler will see my hints about using intrinsics?
 
-* -O3:
-  + $t_1 = 4,320,616,733$ ticks -> $\frac{4,320,616,733}{4.2 \cdot 10^9} \approx 1.0287 s$
-  + $t_2 = 4,315,166,582$ ticks -> $\frac{4,315,166,582}{4.2 \cdot 10^9} \approx 1.0274 s$
-  + $t_3 = 4,373,371,197$ ticks -> $\frac{4,373,371,197}{4.2 \cdot 10^9} \approx 1.0413 s$
+Here we will also consider the result of the program with explicit use of `AVX256 instructions` (in my case, i use `__m256` vectors of size 256 bits, store type `float`).
 
-Let's calculate the arithmetic mean of the obtained values.
+| Compiler Optimization   | Default Version, ticks per frame | Array-optimized, ticks per frame | AVX256-optimized, ticks per frame |
+|:-----------------------:|:--------------------------------:|:--------------------------------:|:---------------------------------:|
+|  -O3                    | 86191819.96                      | 43982076.92                      | 18982180.16                      :|
 
-* -O0: $t_{avg} = \frac{2.1506 + 2.1339 + 2.1374}{3} \approx 2.1406s$
-* -O3: $t_{avg} = \frac{1.0287 + 1.0274 + 1.0413}{3} \approx 1.0325s$
+The array-optimized version works `1.96 times faster` than the primitive version. 
 
-Standard deviation ($\sigma$):
+<p align="center">
+  <a href="" rel="noopener">
+ <img src="https://github.com/lvbealr/MandelbrotSet/blob/main/graphics/img/totalCmp.png" alt="Total Comparison"></a>
+</p>
 
-* -O0: $\sigma = \sqrt{\frac{(2.1506 - 2.1406)^2 + (2.1339 - 2.1406)^2 + (2.1374 - 2.1406)^2}{2}} \approx 0.0088 s$
-* -O3: $\sigma = \sqrt{\frac{(1.0287 - 1.0325)^2 + (1.0274 - 1.0325)^2 + (1.0413 - 1.0325)^2}{2}} \approx 0.0077 s$
+In general, my hints to the compiler did not help much. It used AVX2 instructions only when specifying `R2max` and `POINTS` vectors. 
 
-Z-score ($Z$):
+```asm
+               00103053 c5 fc 29 05 45        VMOVAPS         ymmword ptr [_ZZ26calculateMandelbrotSectionPhfffmmE5R2max],YMM0
+                        52 00 00
+               0010305b 48 39 d6              CMP             param_2,param_3
+               0010305e c5 fc 28 05 da        VMOVAPS         YMM0,ymmword ptr [DAT_00106240]
+                        31 00 00
+               00103066 c5 fc 29 05 12        VMOVAPS         ymmword ptr [_ZZ26calculateMandelbrotSectionPhfffmmE6POINTS],YMM0
+                        52 00 00
+```
+Finally, explicit use of **intrinsic-functions** gives a performance boost of more than `4.54 times!`
 
-* -O0:
-  + $Z_{1} = \frac{2.1506 - 2.1406}{0.0088} \approx 1.14$
-  + $Z_{2} = \frac{2.1339 - 2.1406}{0.0088} \approx -0.76$
-  + $Z_{3} = \frac{2.1374 - 2.1406}{0.0088} \approx -0.36$
+---
 
-* -O3:
-  + $Z_{1} = \frac{1.0287 - 1.0325}{0.0077} \approx -0.49$
-  + $Z_{2} = \frac{1.0274 - 1.0325}{0.0077} \approx -0.66$
-  + $Z_{3} = \frac{1.0413 - 1.0325}{0.0077} \approx 1.14$
+## 📽️ GLSL Implementation <a name = "gpu"></a>
 
-$|Z|< 3 \Rightarrow $ no emissions. 
+In this work, rendering of the Mandelbrot set on the GPU was implemented using GLSL shaders. This approach speeds up rendering by several thousand times. However, it was implemented only for entertainment and comparison, so it was not subjected to thorough analysis.
 
-Let's take into account the margin of error.
+<div style="display: flex; justify-content: space-between;">
+  <img src="https://i.imgur.com/EXPrwRO.gif" alt="Rainbow" width="50%">
+  <img src="https://i.imgur.com/3lCdjRa.gif" alt="Dark Blue" width="50%">
+</div>
 
-* -O0: $\sigma = 0.0088 s (\approx 0.4\% \text{ of avg.})$ - stable data
-* -O3: $\sigma = 0.0077 s (\approx 0.7\% \text{ of avg.})$ - stable data
+<div style="display: flex; justify-content: space-between;">
+  <img src="https://i.imgur.com/EDlvMhE.gif" alt="Purple" width="50%">
+  <img src="https://i.imgur.com/KvIVzKd.gif" alt="Red Turquoise" width="50%">
+</div>
 
-| Compiler Optimization   | $t_{1}, s$ | $t_{2}, s$ | $t_{3}, s$ | $t_{avg}, s$ | $t_{control}, s$ |
-|:-----------------------:|:----------:|:----------:|:----------:|:------------:|:----------------:|
-|  -O0                    | 2.1506     | 2.1339     | 2.1374     | 2.1406       |  2.1392          |
-|  -O3                    | 1.0287     | 1.0274     | 1.0413     | 1.0325       |  1.0387          |
+<div style="display: flex; justify-content: space-between;">
+  <img src="https://i.imgur.com/zHv7g8M.gif" alt="Yellow % Gold" width="50%">
+  <img src="https://i.imgur.com/Eco4eG6.gif" alt="Black Pulse" width="50%">
+</div>
 
-> [!NOTE]
-> `-O3` optimization reduces the time by a factor of about **2.07** > (from 2.141 s to 1.032 s).
-> The data is consistent, the arithmetic mean is suitable as there are no outliers.
+---
 
-Now let's analyze the optimized ``SIMD technology``.
-We will realize calculations with the help of intrinsic functions, and the calculation will be performed in parallel for several points (in my case, we will use `__m256` vectors of size 256 bits, store type `float`).   
+## 🕶️ Multithreading <a name = "multithreading"></a>
 
-| Compiler Optimization   | $t_{1}, s$ | $t_{2}, s$ | $t_{3}, s$ | $t_{avg}, s$ | $t_{control}, s$ |
-|:-----------------------:|:----------:|:----------:|:----------:|:------------:|:----------------:|
-|  -O0                    | 0.7236     | 0.7453     | 0.7063     | 0.7251       |  0.7302          |
-|  -O3                    | 0.1488     | 0.1486     | 0.1500     | 0.1491       |  0.1468          |
+To further optimize performance, the rendering process was parallelized using **multithreading**. The image is divided into horizontal sections (stripes), each processed by a separate CPU thread. This approach leverages modern multi-core processors to significantly reduce computation time.
 
+### Implementation Details:
+  - Thread Management: The C++ Standard Thread Library (`std::thread`) is used to create and manage worker threads.
+  - Work Distribution: The image height is divided into N equal segments (where N is the number of available CPU threads). Each thread processes its assigned rows independently.
 
-> [!NOTE]
-> `-O3` optimization reduces the time by a factor of about **4.87** > (from 0.7251 s to 0.1491 s).
+`Threads = 12`
 
-Now let's compare the performance gain at `-O0` and `-O3` of the standard and optimized versions.
+| Implementation          | Ticks per frame, ticks per frame | FPS (avg, on start) |
+|:-----------------------:|:--------------------------------:|:-------------------:|
+|  Default (-O0)          | 76544332                         | 31                  |
+|  Default (-O3)          | 34346892                         | 69                  |
+|  Array-optimized (-O3)  | 22714218                         | 118                 |
+|  AVX-optimized (-O3)    | 7610524                          | 284                 |
 
-* -O0: $\frac{2.1406}{0.7251} \approx 2.95 $
-* -O3: $\frac{1.0325}{0.1491} \approx 6.92 $
+Combined with AVX256 optimizations, the multithreaded version achieves over **21x speedup** compared to the original single-threaded implementation without vectorization.
 
-> [!WARNING]
-> So, compiler optimizations `-O3` and `SIMD technologies and AVX instructions` by rendering optimization give almost 7 times increase!
+---
+
+## ⚙️ Installation <a name = "installation"></a>
+
+First of all, clone the repository to your computer and update the submodules in the project.
+
+```bash
+git clone git@github.com:lvbealr/MandelbrotSet.git
+git submodule update --init --remote --recursive
+```
+
+Next, use Make to compile the files.
+
+```bash
+make <target> [OPTIMIZATION_LEVEL=<lvl>=-O0] [MULTITHREADING=<status>=] [TEST=<testNumber>=300]
+```
+
+Now run the program, e.g.:
+
+```bash
+./build/gpu/gpu
+```
+
+---
+
+## 🕹️ Example Usage <a name = "example_usage"></a>
+
+The program has the ability to dynamically change the coloring and display FPS. Below is a list of hot keys:
+
+| Hotkey |       Action        | 
+|:------:|:-------------------:|
+|  W     | Move up             |
+|  S     | Move down           |
+|  A     | Move left           |
+|  D     | Move right          |
+|  ↑     | Zoom in             |
+|  ↓     | Zoom out            |
+|  T     | Change color scheme |
+|  F11   | Show FPS / Hide FPS |
 
 ---
 
 ## 🛠️ Conclusion <a name = "conclusion"></a>
 
-`SIMD instructions` really speed up the program a lot. The ability of **parallel computing** has a strong impact on performance. In the case of **Mandelbrot set** rendering, these optimizations (together with compiler optimizations `-O3`) can give a gain of almost `7 times`!
+`SIMD instructions` really speed up the program a lot. The ability of **parallel computing** has a strong impact on performance. In the case of **Mandelbrot set** rendering, these optimizations (together with compiler optimizations `-O3`) can give a gain of almost `8.7 times` (compared to default `-O0` version)!
+
+
 
 ---
 
