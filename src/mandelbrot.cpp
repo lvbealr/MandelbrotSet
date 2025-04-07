@@ -199,7 +199,8 @@ int main() {
             if (run >= TEST) {
                 window.close();
             }
-            printf("%ld/%ld\n", run, TEST);
+            printf("%ld/%ld %lu\n", run, TEST, end - start);
+
         #else
             window.clear();
 
@@ -214,7 +215,7 @@ int main() {
     }
 
     #if ON_TEST_
-        printf("RUNS: %ld, TIME: %ld (ticks) , TIME PER RUN: %ld (ticks per run) \n", run, time, time / run);
+        // printf("RUNS: %ld, TIME: %ld (ticks) , TIME PER RUN: %ld (ticks per run) \n", run, time, time / run);
     #endif
 
     return 0;
