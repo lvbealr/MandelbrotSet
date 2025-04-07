@@ -87,7 +87,7 @@ Here we will also consider the result of the program with explicit use of `AVX25
 
 | Compiler Optimization   | Default Version, ticks per frame | Array-optimized, ticks per frame | AVX256-optimized, ticks per frame |
 |:-----------------------:|:--------------------------------:|:--------------------------------:|:---------------------------------:|
-|  -O3                    | 86191819.96                      | 43982076.92                      | 18982180.16                      :|
+|  -O3                    | 86191819.96                      | 43982076.92                      | 18982180.16                       |
 
 The array-optimized version works `1.96 times faster` than the primitive version. 
 
@@ -116,18 +116,18 @@ Finally, explicit use of **intrinsic-functions** gives a performance boost of mo
 In this work, rendering of the Mandelbrot set on the GPU was implemented using GLSL shaders. This approach speeds up rendering by several thousand times. However, it was implemented only for entertainment and comparison, so it was not subjected to thorough analysis.
 
 <div style="display: flex; justify-content: space-between;">
-  <img src="https://i.imgur.com/EXPrwRO.gif" alt="Rainbow" width="50%">
-  <img src="https://i.imgur.com/3lCdjRa.gif" alt="Dark Blue" width="50%">
+  <img src="https://github.com/lvbealr/MandelbrotSet/blob/main/gif/rainbow.gif" alt="Rainbow" width="48%">
+  <img src="https://github.com/lvbealr/MandelbrotSet/blob/main/gif/darkBlue.gif" alt="Dark Blue" width="48%">
 </div>
 
 <div style="display: flex; justify-content: space-between;">
-  <img src="https://i.imgur.com/EDlvMhE.gif" alt="Purple" width="50%">
-  <img src="https://i.imgur.com/KvIVzKd.gif" alt="Red Turquoise" width="50%">
+  <img src="https://github.com/lvbealr/MandelbrotSet/blob/main/gif/purple.gif" alt="Purple" width="48%">
+  <img src="https://github.com/lvbealr/MandelbrotSet/blob/main/gif/redTurquoise.gif" alt="Red Turquoise" width="48%">
 </div>
 
 <div style="display: flex; justify-content: space-between;">
-  <img src="https://i.imgur.com/zHv7g8M.gif" alt="Yellow % Gold" width="50%">
-  <img src="https://i.imgur.com/Eco4eG6.gif" alt="Black Pulse" width="50%">
+  <img src="https://github.com/lvbealr/MandelbrotSet/blob/main/gif/yellowGold.gif" alt="Yellow & Gold" width="48%">
+  <img src="https://github.com/lvbealr/MandelbrotSet/blob/main/gif/blackPulse.gif" alt="Black Pulse" width="48%">
 </div>
 
 ---
