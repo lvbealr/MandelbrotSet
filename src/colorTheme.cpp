@@ -7,8 +7,12 @@
 
 //////////////////////////////////// COLORS ////////////////////////////////////////////
 
-colorTheme COLOR_THEME[] = {theme_0, theme_1, theme_2};
-extern const size_t MAX_COLOR_THEME = sizeof(COLOR_THEME) / sizeof(COLOR_THEME[0]);
+extern const colorTheme COLOR_THEME[]   = {theme_0, \
+                                           theme_1, \
+                                           theme_2};
+
+extern const size_t     MAX_COLOR_THEME = sizeof(COLOR_THEME) /   \
+                                          sizeof(COLOR_THEME[0]);
 
 size_t COLOR_THEME_INDEX = 0;
 colorTheme setTheme      = COLOR_THEME[COLOR_THEME_INDEX];

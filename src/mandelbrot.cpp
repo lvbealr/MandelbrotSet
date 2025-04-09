@@ -8,54 +8,30 @@
 
 #include "customWarning.h"
 #include "mandelbrot.h"
+#include "colorTheme.h"
+#include "calculateSet.h"
 
 //////////////////////////////////// COLORS ////////////////////////////////////////////
 
-extern colorTheme   COLOR_THEME[];
-extern colorTheme   setTheme;
-extern const size_t MAX_COLOR_THEME;
-extern       size_t COLOR_THEME_INDEX;
+extern const colorTheme   COLOR_THEME[];
+extern const size_t       MAX_COLOR_THEME;
+
+extern size_t     COLOR_THEME_INDEX;
+extern colorTheme setTheme;
+
+////////////////////////////////////////////////////////////////////////////////////////
+
+//////////////////////////////////// FUNCS ////////////////////////////////////////////
+
+extern calculateSectionFunc CALCULATE_FUNCS[];
+extern const size_t         MAX_CALCULATE_FUNC_INDEX;
+
+extern size_t               CALCULATE_FUNC_INDEX;
+extern calculateSectionFunc calculateSection;
 
 ////////////////////////////////////////////////////////////////////////////////////////
 
 static bool SHOW_FPS = true;
-
-renderError calculateMandelbrotSection(uint8_t *points,
-                                const float xShift, const float yShift, const float scale, size_t startY, size_t endY) {
-    customAssert(points != NULL, NULL_PTR);
-
-    for (size_t y = startY; y < endY; y++) {
-        float     y0 = (y / (float) HEIGHT - 0.5f) * MAX_RADIUS * scale + yShift;
-
-        for (size_t x = 0; x < WIDTH; x++) {
-            float x0 = (x / (float) WIDTH -  0.5f) * MAX_RADIUS * scale + xShift;
-
-            float X = x0;
-            float Y = y0;
-
-            size_t iter = 0;
-
-            for (; iter < ITER_MAX; iter++) {
-                float X2 = X * X;
-                float Y2 = Y * Y;
-                float XY = X * Y;
-
-                float R2 = X2 + Y2;
-
-                if (R2 > MAX_RADIUS) {
-                    break;
-                }
-
-                X = X2 - Y2 + x0;
-                Y = XY + XY + y0;
-            }
-
-            setTheme(points, x, y, iter);
-        }
-    }
-
-    return NO_ERRORS;
-}
 
 renderError calculateMandelbrot(sf::RenderWindow *window, uint8_t *points, const float xShift, const float yShift, const float scale) {
     customAssert(window != NULL, NULL_PTR);
@@ -70,9 +46,9 @@ renderError calculateMandelbrot(sf::RenderWindow *window, uint8_t *points, const
         size_t endY   = (i == numThreads - 1) ? HEIGHT : startY + rowsPerThread;
 
         #ifdef ON_MULTITHREADING_
-            threads.emplace_back(calculateMandelbrotSection, points, xShift, yShift, scale, startY, endY);
+            threads.emplace_back(calculateSection, points, xShift, yShift, scale, startY, endY);
         #else
-            calculateMandelbrotSection(points, xShift, yShift, scale, startY, endY);
+            calculateSection(points, xShift, yShift, scale, startY, endY);
         #endif
     }
 
@@ -120,6 +96,11 @@ renderError handleKeyboard(const std::optional<sf::Event> event, float *xShift, 
             case sf::Keyboard::Key::T:
                 COLOR_THEME_INDEX++;
                 setTheme = COLOR_THEME[COLOR_THEME_INDEX % MAX_COLOR_THEME];
+                break;
+
+            case sf::Keyboard::Key::F:
+                CALCULATE_FUNC_INDEX++;
+                calculateSection = CALCULATE_FUNCS[CALCULATE_FUNC_INDEX % MAX_CALCULATE_FUNC_INDEX];
                 break;
 
             case sf::Keyboard::Key::F11:

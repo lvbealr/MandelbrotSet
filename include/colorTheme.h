@@ -1,6 +1,8 @@
 #ifndef COLOR_THEME_H_
 #define COLOR_THEME_H_
 
+#include <inttypes.h>
+
 const size_t WIDTH    = 800;
 const size_t HEIGHT   = 600;
 
