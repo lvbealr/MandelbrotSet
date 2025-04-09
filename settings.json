@@ -1,0 +1,12 @@
+{
+  "windowName": "Mandelbrot Set",
+  "width": 1920,
+  "height": 1080,
+  "xStartShift": -4.0,
+  "yStartShift": -2.0,
+  "linearShift": 0.1,
+  "scaleShift": 0.1,
+  "maxRadius": 4.0,
+  "maxIter": 2048,
+  "showFPS": true
+}
