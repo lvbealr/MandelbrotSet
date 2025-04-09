@@ -1,5 +1,5 @@
-#include <stddef.h>
 #include <inttypes.h>
+#include <stddef.h>
 
 #include "intrinsics.h"
 

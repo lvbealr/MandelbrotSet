@@ -41,3 +41,5 @@ void mm256_sub_ps(float m256[ARRAY_SIZE], const float m256_1[ARRAY_SIZE],
 void mm256_storeu_si256(int m256i_1[ARRAY_SIZE], const int m256_2[ARRAY_SIZE]);
 
 int mm256_movemask_ps(const float cmp[ARRAY_SIZE]);
+
+#endif // INTRINSICS_H_

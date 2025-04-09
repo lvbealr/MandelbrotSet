@@ -5,38 +5,41 @@
 
 static size_t COLOR_THEME_INDEX = 0;
 
-static bool SHOW_FPS = true;
+renderError handleKeyboard(renderContext *context, const std::optional<sf::Event> event, float *xShift, float *yShift, float *scale) {
+    customAssert(event.has_value(), INVALID_POINTER);
+    customAssert(xShift != NULL,    INVALID_POINTER);
+    customAssert(yShift != NULL,    INVALID_POINTER);
+    customAssert(scale  != NULL,    INVALID_POINTER);
 
-renderError handleKeyboard(const std::optional<sf::Event> event, float *xShift, float *yShift, float *scale) {
-    customAssert(event.has_value(), NULL_PTR);
-    customAssert(xShift != NULL,    NULL_PTR);
-    customAssert(yShift != NULL,    NULL_PTR);
-    customAssert(scale  != NULL,    NULL_PTR);
+    float linearShift = context->linearShift;
+    float scaleShift  = context->scaleShift;
+
+    bool *showFPS     = &context->showFPS;
 
     if (event->is<sf::Event::KeyPressed>()) {
         switch (event->getIf<sf::Event::KeyPressed>()->code) {
             case sf::Keyboard::Key::A:
-                *xShift -= LIN_SHIFT * (*scale);
+                *xShift -= linearShift * (*scale);
                 break;
 
             case sf::Keyboard::Key::D:
-                *xShift += LIN_SHIFT * (*scale);
+                *xShift += linearShift * (*scale);
                 break;
 
             case sf::Keyboard::Key::W:
-                *yShift += LIN_SHIFT * (*scale);
+                *yShift += linearShift * (*scale);
                 break;
 
             case sf::Keyboard::Key::S:
-                *yShift -= LIN_SHIFT * (*scale);
+                *yShift -= linearShift * (*scale);
                 break;
 
             case sf::Keyboard::Key::Up:
-                *scale -= SCALE_SHIFT * (*scale);
+                *scale -= scaleShift * (*scale);
                 break;
 
             case sf::Keyboard::Key::Down:
-                *scale += SCALE_SHIFT * (*scale);
+                *scale += scaleShift * (*scale);
                 break;
 
             case sf::Keyboard::Key::T:
@@ -44,7 +47,7 @@ renderError handleKeyboard(const std::optional<sf::Event> event, float *xShift, 
                 break;
 
             case sf::Keyboard::Key::F11:
-                SHOW_FPS = !SHOW_FPS;
+                (*showFPS) = !(*showFPS);
 
             default:
                 break;
@@ -55,7 +58,12 @@ renderError handleKeyboard(const std::optional<sf::Event> event, float *xShift, 
 }
 
 int main() {
-    sf::RenderWindow window(sf::VideoMode({WIDTH, HEIGHT}), "Mandelbrot Set");
+    renderContext *context = createRenderContext();
+    renderWindow  *contextWindow = context->window;
+
+    sf::RenderWindow window(sf::VideoMode({contextWindow->width,
+                                                    contextWindow->height}),
+                                                       contextWindow->windowName);
     
     float xShift = 0.0;
     float yShift = 0.0;
@@ -69,7 +77,7 @@ int main() {
         return 1;
     }
 
-    sf::RectangleShape fullscreenRect(sf::Vector2f({WIDTH, HEIGHT}));
+    sf::RectangleShape fullscreenRect(sf::Vector2f({(float) contextWindow->width, (float) contextWindow->height}));
     fullscreenRect.setPosition({0, 0});
 
     sf::Font font;
@@ -86,15 +94,15 @@ int main() {
             if (event->is<sf::Event::Closed>()) {
                 window.close();
             }
-            handleKeyboard(event, &xShift, &yShift, &scale);
+            handleKeyboard(context, event, &xShift, &yShift, &scale);
         }
 
         float deltaTime = fpsClock.restart().asSeconds();
         float FPS = (deltaTime > 0) ? 1.0f / deltaTime : 0.0f;
 
         shader.setUniform("time",   clock.getElapsedTime().asSeconds());
-        shader.setUniform("width",  (int) WIDTH);
-        shader.setUniform("height", (int) HEIGHT);
+        shader.setUniform("width",  (int) contextWindow->width);
+        shader.setUniform("height", (int) contextWindow->height);
         shader.setUniform("offset", sf::Vector2f({xShift, yShift}));
         shader.setUniform("scale",  scale);
         shader.setUniform("theme",  (int) COLOR_THEME_INDEX);
@@ -102,7 +110,7 @@ int main() {
         window.clear();
         window.draw(fullscreenRect, &shader);
 
-        if (SHOW_FPS) {
+        if (context->showFPS) {
             fpsText.setString("FPS: " + std::to_string(static_cast<int>(FPS)));
             window.draw(fpsText);
         }

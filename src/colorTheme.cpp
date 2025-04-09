@@ -2,8 +2,9 @@
 #include <stddef.h>
 #include <stdint.h>
 
-#include "colorTheme.h"
 #include "customWarning.h"
+
+#include "render.h"
 
 //////////////////////////////////// COLORS ////////////////////////////////////////////
 
@@ -14,8 +15,8 @@ extern const colorTheme COLOR_THEME[]   = {theme_0, \
 extern const size_t     MAX_COLOR_THEME = sizeof(COLOR_THEME) /   \
                                           sizeof(COLOR_THEME[0]);
 
-size_t COLOR_THEME_INDEX = 0;
-colorTheme setTheme      = COLOR_THEME[COLOR_THEME_INDEX];
+size_t     COLOR_THEME_INDEX = 0;
+colorTheme setTheme          = COLOR_THEME[COLOR_THEME_INDEX];
 
 ////////////////////////////////////////////////////////////////////////////////////////
 
@@ -75,11 +76,11 @@ void hsvToRgb(float h, float s, float v, uint8_t *r, uint8_t *g, uint8_t *b) {
     *b = (uint8_t)((b1 + m) * 255.0f);
 }
 
-renderError theme_0(uint8_t *points, const float x, const float y, const float iter) {
-    customAssert(points != NULL, NULL_PTR);
- 
-    size_t pointPos   = (size_t)(y * WIDTH + x) * 4;
-    float  t          = iter / (float)(ITER_MAX - 1);
+renderError theme_0(renderContext *context, uint8_t *points, const float x, const float y, const float iter) {
+    customAssert(points != NULL, INVALID_POINTER);
+
+    size_t pointPos   = (size_t)(y * context->window->width + x) * 4;
+    float  t          = iter / (float)(context->maxIter - 1);
  
     uint8_t intensity = (uint8_t)(127.5f * (1 + cosf(255.0f * t)));
  
@@ -91,13 +92,17 @@ renderError theme_0(uint8_t *points, const float x, const float y, const float i
     return NO_ERRORS;
  }
  
- renderError theme_1(uint8_t *points, const float x, const float y, const float iter) {
-     customAssert(points != NULL, NULL_PTR);
+ renderError theme_1(renderContext *context, uint8_t *points, const float x, const float y, const float iter) {
+     customAssert(points != NULL, INVALID_POINTER);
+
+     unsigned width   = context->window->width;
+     unsigned height  = context->window->height;
+     unsigned maxIter = context->maxIter;
  
-     size_t pointPos = (size_t)(y * WIDTH + x) * 4;
-     float threshold = 0.05f * ITER_MAX;
- 
-     if (iter == ITER_MAX || iter < threshold) {
+     size_t pointPos = (size_t)(y * width + x) * 4;
+     float threshold = 0.05f * maxIter;
+
+     if (iter == maxIter || iter < threshold) {
 
         points[pointPos]     = 20;
         points[pointPos + 1] = 20;
@@ -105,7 +110,7 @@ renderError theme_0(uint8_t *points, const float x, const float y, const float i
 
      } else {
 
-        float t = iter / (float)(ITER_MAX - 1);
+        float t = iter / (float)(maxIter - 1);
  
         float baseHue      = 128.0f;
         float hueVariation = 5.0f;
@@ -130,8 +135,8 @@ renderError theme_0(uint8_t *points, const float x, const float y, const float i
         lightDirX /= lightMag;
         lightDirY /= lightMag;
  
-        float centerX = WIDTH / 2.0f;
-        float centerY = HEIGHT / 2.0f;
+        float centerX = width  / 2.0f;
+        float centerY = height / 2.0f;
 
         float normX = (x - centerX) / centerX;
         float normY = (y - centerY) / centerY;
@@ -147,15 +152,15 @@ renderError theme_0(uint8_t *points, const float x, const float y, const float i
         g = (uint8_t)fminf(255.0f, g * shading);
         b = (uint8_t)fminf(255.0f, b * shading);
  
-        float distX    = fmin(x, WIDTH - x);
-        float distY    = fmin(y, HEIGHT - y);
+        float distX    = fmin(x, width - x);
+        float distY    = fmin(y, height - y);
 
         float edgeDist = fmin(distX, distY);
  
         float borderThreshold = 65536.0f;
         float edgeGlowFactor  = 1.0f - fmin(edgeDist / borderThreshold, 1.0f);
  
-        float gradientFactor = x / (float) WIDTH;
+        float gradientFactor = x / (float) width;
  
         uint8_t tintR = (uint8_t)(0   * (1.0f - gradientFactor) + 255 * gradientFactor);
         uint8_t tintG = (uint8_t)(150 * (1.0f - gradientFactor) + 15  * gradientFactor);
@@ -175,12 +180,15 @@ renderError theme_0(uint8_t *points, const float x, const float y, const float i
     return NO_ERRORS;
  }
  
- renderError theme_2(uint8_t *points, const float x, const float y, const float iter) {
-    customAssert(points != NULL, NULL_PTR);
+ renderError theme_2(renderContext *context, uint8_t *points, const float x, const float y, const float iter) {
+    customAssert(points != NULL, INVALID_POINTER);
+
+    unsigned width   = context->window->width;
+    unsigned maxIter = context->maxIter;
  
-    size_t pointPos = (size_t)(y * WIDTH + x) * 4;
+    size_t pointPos = (size_t)(y * width + x) * 4;
  
-    if (iter == ITER_MAX) {
+    if (iter == maxIter) {
 
         points[pointPos]     = 0;
         points[pointPos + 1] = 0;
@@ -188,8 +196,8 @@ renderError theme_0(uint8_t *points, const float x, const float y, const float i
 
     } else {
 
-        float t = iter / (float) (ITER_MAX - 1);
- 
+        float t = iter / (float) (maxIter - 1);
+
         float goldenHue        = 40.0f;
         float goldenSaturation = 0.8f;
  
